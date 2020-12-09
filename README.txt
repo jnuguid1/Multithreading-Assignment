@@ -13,6 +13,6 @@
    
       makefile
       
-      In the same directory click on "New_Alarm_Cond" to run the code.
+      In the same directory open the Unix exucutable file "New_Alarm_Cond" to run the code.
 
 2. At the prompt "ALARM>", type...
