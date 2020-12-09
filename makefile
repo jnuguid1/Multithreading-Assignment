@@ -1,4 +1,5 @@
-#First copy the files "alarm_cond.c", "errors.h", and "makefile" into the same directory
+#First copy the files "New_Alarm_Cond.c", "errors.h", and "makefile" into the same directory
+#Remove .txt extension 'from makefile.txt'
 
-target: alarm_cond.c
-	cc -o alarm_cond alarm_cond.c -D_POSIX_PTHREAD_SEMANTICS -lpthread
+target: New_Alarm_Cond.c
+	cc -o New_Alarm_Cond New_Alarm_Cond.c -D_POSIX_PTHREAD_SEMANTICS -lpthread
