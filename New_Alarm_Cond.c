@@ -21,6 +21,7 @@
 #include <pthread.h>
 #include <time.h>
 #include "errors.h"
+#include <semaphore.h>
 
 typedef struct alarm_tag {
     struct alarm_tag    *link;
@@ -33,9 +34,16 @@ typedef struct alarm_tag {
 
 pthread_mutex_t alarm_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t alarm_cond = PTHREAD_COND_INITIALIZER;
+sem_t alarm_list_sem;
+sem_t change_alarm_sem;
+//sem_init(&alarm_list_sem, 0, 1);
+
 alarm_t *alarm_list = NULL;
 alarm_t *change_alarm_request_list = NULL;
 time_t current_alarm = 0;
+alarm_t *new_alarm;
+int avail_displays = 0; // the number of display alarm threads that can claim an alarm. Could make this a semaphore.
+int real_avail_displays = 0; // for the newest created alarm, the number of display alarm threads that match its group id
 
 /*
  * Insert alarm entry on list, in order of alarmid.
@@ -84,12 +92,15 @@ void alarm_insert (alarm_t *alarm)
      * work), or if the new alarm comes before the one on
      * which the alarm thread is waiting.
      */
+    // Might not need this
+    
     if (current_alarm == 0 || alarm->time < current_alarm) {
         current_alarm = alarm->time;
         status = pthread_cond_signal (&alarm_cond);
         if (status != 0)
             err_abort (status, "Signal cond");
     }
+    
 }
 
 /*
@@ -156,19 +167,120 @@ void *alarm_thread (void *arg)
     }
 }
 
+void *display_thread (void *arg)
+{
+    int groupid;
+    alarm_t *alarm1;
+    alarm_t *alarm2;
+    int alarm_num = 0; // the number of alarms currently assigned to this dispay alarm thread
+    time_t now;
+    int status;
+    int expired;
+    struct timespec cond_time;
+    /*
+        Between alarm1 and alarm2, the time of the alarm that 
+        will expire first. 
+        WIP -- When a new alarm is assigned to this display alarm thread
+        need to add functionallity that updates curr_alarm.
+        Need to use curr_alarm similar to how current_alarm is used
+        in alarm_cond.c where the routine does a conditional timed wait
+        using the current_alarm time.
+    */
+    time_t curr_alarm;
+
+    now = time (NULL);
+    expired = 0;
+    alarm1 = new_alarm;  
+    curr_alarm = alarm1->time;  
+    alarm_num++;
+    groupid = alarm1->groupid;
+   
+   while (alarm1->time > now) {
+    cond_time.tv_sec = time (NULL) + 5;
+    cond_time.tv_nsec = 0;
+    status = pthread_cond_timedwait (
+        &alarm_cond, &alarm_mutex, &cond_time);
+    if (status == ETIMEDOUT){
+        printf("Alarm(%d) Printed by Alarm Display Thread %d at %d: Group(%d) %d %s\n",
+            alarm1->alarmid, pthread_self(), time (NULL), 
+            alarm1->groupid, alarm1->time, alarm1->message); 
+    }   
+    now = time (NULL); 
+   }
+   
+    printf("Display Thread %d Has Stopped Printing Message of Alarm(%d) at %d: Group(%d) %d %s\n", pthread_self(), alarm1->alarmid, time (NULL), alarm1->groupid, alarm1->time, alarm1->message);
+
+    printf("No More Alarms in Group(%d): Display Thread %d exiting at %d\n", groupid, pthread_self(), time (NULL));
+}
+
+void *alarm_monitor_thread (void *arg) 
+{
+    alarm_t *alarm;
+    struct timespec cond_time;
+    time_t now;
+    int status;
+    printf("here\n");
+    status = pthread_mutex_lock (&alarm_mutex);
+    if (status != 0)
+        err_abort (status, "Lock mutex");
+    while (1) {
+         /*
+         * If the alarm list is empty, wait until an alarm is
+         * added. Setting current_alarm to 0 informs the insert
+         * routine that the thread is not busy.
+         */
+        current_alarm = 0;
+        while (alarm_list == NULL) {
+            status = pthread_cond_wait (&alarm_cond, &alarm_mutex);
+            if (status != 0)
+                err_abort (status, "Wait on cond");
+            }
+        alarm = alarm_list;
+        now = time (NULL);
+        if (alarm->time > now) {
+#ifdef DEBUG
+            printf ("[waiting: %d(%d)\"%s\"]\n", alarm->time,
+                alarm->time - time (NULL), alarm->message);
+#endif
+            cond_time.tv_sec = alarm->time;
+            cond_time.tv_nsec = 0;
+            current_alarm = alarm->time;
+            status = pthread_cond_timedwait (
+                &alarm_cond, &alarm_mutex, &cond_time);
+            if (status == ETIMEDOUT) {
+                status = pthread_cond_signal (&alarm_cond);
+                if (status != 0)
+                    err_abort (status, "Signal cond");
+                printf("Alarm Monitor Thread %d Has Removed Alarm (%d) at %d: Group(%d) %d %s\n",
+                pthread_self(), alarm->alarmid, time (NULL),
+                alarm->groupid, alarm->time, alarm->message);
+                alarm_list = alarm->link;
+                free(alarm);
+            }
+        } else {
+            printf("Alarm Monitor Thread %d Has Removed Alarm (%d) at %d: Group(%d) %d %s",
+                pthread_self(), alarm->alarmid, time (NULL),
+                alarm->groupid, alarm->time, alarm->message);
+            alarm_list = alarm->link;
+            free(alarm);
+        }
+    }
+}
+
 int main (int argc, char *argv[])
 {
     int status;
     char line[128];
-    alarm_t *alarm;
-    pthread_t thread;
+    pthread_t monitor_thread;
 
-
+    
     status = pthread_create (
-        &thread, NULL, alarm_thread, NULL);
+        &monitor_thread, NULL, alarm_monitor_thread, NULL);
     if (status != 0)
         err_abort (status, "Create alarm thread");
+    
     while (1) {
+        alarm_t *alarm;
         int alarmid;
         int groupid;
         char message[64];
@@ -181,9 +293,7 @@ int main (int argc, char *argv[])
         if (strlen (line) <= 1) continue;
 
         /*
-         * Parse input line into seconds (%d) and a message
-         * (%64[^\n]), consisting of up to 64 characters
-         * separated from the seconds by whitespace.
+         * Parse input line.
          */
         if (sscanf (line, "%s (%d): %s (%d) %d %64[^\n]",
             request, &alarmid, group_keyword, &groupid,
@@ -191,16 +301,17 @@ int main (int argc, char *argv[])
             fprintf (stderr, "Bad command\n");
             free (alarm);
         } else {
-            status = pthread_mutex_lock (&alarm_mutex);
+            status = pthread_mutex_lock (&alarm_mutex); // lock access to the alarm list
             if (status != 0)
                 err_abort (status, "Lock mutex");            
-            if (alarmid <= 0 || groupid <= 0 || seconds < 0 || strcmp(group_keyword, "Group") != 0) {
+            if (alarmid <= 0 || groupid <= 0 || seconds < 0 || strcmp(group_keyword, "Group") != 0) { // checks for invalid input
                 fprintf (stderr, "Invalid input\n");
             } else {
                 if (strcmp(request, "Start_Alarm") == 0) {
                     alarm = (alarm_t*)malloc (sizeof (alarm_t));
                     if (alarm == NULL)
                         errno_abort ("Allocate alarm");
+                    pthread_t display_alarm_t;
                     alarm->seconds = seconds;
                     strcpy(alarm->message, message);
                     alarm->alarmid = alarmid;
@@ -208,18 +319,31 @@ int main (int argc, char *argv[])
                     alarm->time = time (NULL) + alarm->seconds;
                     /*
                     * Insert the new alarm into the list of alarms,
-                    * sorted by expiration time.
+                    * sorted by alarm id.
                     */
                     alarm_insert (alarm);
-                    printf("Alarm(%d) Inserted by Main Thread %d Into Alarm List at %d: Group(%d) %d %s\n", alarmid, main, time (NULL), groupid, alarm->time, message);
+                    printf("Alarm(%d) Inserted by Main Thread %d Into Alarm List at %d: Group(%d) %d %s\n",
+                     alarmid, main, time (NULL), groupid, alarm->time, message);
+                    new_alarm = alarm;
+                    if (avail_displays == 0) {
+                        status = pthread_create (
+                            &display_alarm_t, NULL, display_thread, NULL);
+                        if (status != 0)
+                            err_abort (status, "Create alarm thread");
+                        printf("Main Thread Created New Display Alarm Thread %d For Alarm(%d) at %d: Group(%d)) %d %s\n",
+                         display_alarm_t, alarmid, time (NULL), groupid, alarm->time, message);
+                    } else {
+
+                    }
+
+
                     status = pthread_mutex_unlock (&alarm_mutex);
                     if (status != 0)
                         err_abort (status, "Unlock mutex");
                 } else if (strcmp(request, "Change_Alarm") == 0) {
                     //[WIP]
                 } else {
-                    fprintf(stderr, "Invalid Alarm Request\n");
-                    free (alarm);    
+                    fprintf(stderr, "Invalid Alarm Request\n");  
                 }
             }
         }
