@@ -1,4 +1,4 @@
-#First copy the files "New_Alarm_Cond.c", "errors.h", and "makefile" into the same directory
+#First copy the files "New_Alarm_Cond.c", "errors.h", and "makefile.txt" into the same directory
 #Remove .txt extension from 'makefile.txt'
 
 target: New_Alarm_Cond.c
