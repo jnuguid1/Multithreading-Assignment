@@ -299,8 +299,8 @@ int main (int argc, char *argv[])
 #ifdef DEBUG
                     printf ("[change alarm request list: ");
                     for (next = change_alarm_request_list; next != NULL; next = next->link)
-                        printf ("%d(%d)[\"%s\"] ", next->time,
-                            next->time - time (NULL), next->message);
+                        printf ("Group(%d) Alarmid(%d) Time(%d) [\"%s\"] ", next->groupid,
+                            next->alarmid, next->time - time (NULL), next->message);
                     printf ("]\n");
 #endif                   
                     if (status != 0)
