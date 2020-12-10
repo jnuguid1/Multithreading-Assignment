@@ -297,7 +297,7 @@ int main (int argc, char *argv[])
                     printf("Change Alarm Request (%d) Inserted by Main Thread %d into Alarm List at %d: Group(%d) %d %s\n", alarmid, main, time (NULL), groupid, alarm->time, message);
                     status = pthread_mutex_unlock (&request_mutex); // Done writing to the request list so unlock mutex.
 #ifdef DEBUG
-                    printf ("[list: ");
+                    printf ("[change alarm request list: ");
                     for (next = change_alarm_request_list; next != NULL; next = next->link)
                         printf ("%d(%d)[\"%s\"] ", next->time,
                             next->time - time (NULL), next->message);
