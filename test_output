@@ -8,8 +8,14 @@ Invalid input
 Alarm> Start_Alarm (1): Group (4) -40 test
 Invalid input
 
+Alarm> Start (1): Group (4) 40 test
+Invalid input
+
+Alarm> Start (1): Grp (4) 40 test
+Invalid input
 
           ===Start Alarm===
+ -- Case 1 --
 Alarm> Start_Alarm (3): Group (4) 10 test
 Alarm(3) Inserted by Main Thread 4200916 Into Alarm List at 1607547390: Group(4) 1607547400 test
 Main Thread Created New Display Alarm Thread 526640896 For Alarm(3) at 1607547390: Group(4)) 1607547400 test
@@ -19,6 +25,17 @@ Alarm(3) Printed by Alarm Display Thread 526640896 at 1607547399: Group(4) 16075
 Alarm Monitor Thread 535033600 Has Removed Alarm (3) at 1607547399: Group(4) 1607547400 test
 Display Thread 526640896 Has Stopped Printing Message of Alarm(3) at 1607547400: Group(4) 1607547400 test
 No More Alarms in Group(4): Display Thread 526640896 exiting at 1607547400
+
+-- Case 2 --
+Alarm> Start_Alarm (3): Group (2) 12 hi
+Alarm(3) Inserted by Main Thread 4200320 Into Alarm List at 1607574958: Group(2) 1607574970 hi
+Main Thread Created New Display Alarm Thread 1719809792 For Alarm(3) at 1607574958: Group(2)) 1607574970 hi
+
+Alarm> Alarm(3) Printed by Alarm Display Thread 1719809792 at 1607574962: Group(2) 1607574970 hi
+Alarm(3) Printed by Alarm Display Thread 1719809792 at 1607574967: Group(2) 1607574970 hi
+Alarm Monitor Thread 1728202496 Has Removed Alarm (3) at 1607574969: Group(2) 1607574970 hi
+Display Thread 1719809792 Has Stopped Printing Message of Alarm(3) at 1607574970: Group(2) 1607574970 hi
+No More Alarms in Group(2): Display Thread 1719809792 exiting at 1607574970
 
 
         ===Input Errors for Change Alarm===
@@ -39,6 +56,9 @@ Main Thread Created New Display Alarm Thread -963836160 For Alarm(3) at 16075713
 
 Alarm> Change_Alarm (3): Group (4) 40 new input
 Change Alarm Request (1) Inserted by Main Thread4200320 into Alarm List at 1607570970: Group(1) 1607571010 new input
+[change alarm request list: Group(4) Alarmid(3) Time(40) ["new input"] ]
+
+Note: The above output was run with the flag -DDEBUG in the compile statement
 
 
 
