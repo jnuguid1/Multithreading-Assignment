@@ -21,7 +21,7 @@ Display Thread 526640896 Has Stopped Printing Message of Alarm(3) at 1607547400:
 No More Alarms in Group(4): Display Thread 526640896 exiting at 1607547400
 
 
-        ===Input Errors for Start Alarm===
+        ===Input Errors for Change Alarm===
 Alarm> Change_Alarm (-1): Group (4) 40 test
 Invalid input
 
