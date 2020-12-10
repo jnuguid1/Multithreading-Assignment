@@ -5,7 +5,7 @@
    
    1. To compile the program "New_Alarm_Cond.c", use the following command:
 
-      cc alarm_cond.c -D_POSIX_PTHREAD_SEMANTICS -lpthread
+      cc New_Alarm_Cond.c -D_POSIX_PTHREAD_SEMANTICS -lpthread
       
       Type "a.out" to run the executable code.
       
