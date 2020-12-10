@@ -1,11 +1,11 @@
         ===Input Errors for Start Alarm===
-Alarm> Start_Alarn (-1): Group (4) 40 test
+Alarm> Start_Alarm (-1): Group (4) 40 test
 Invalid input
 
-Alarm> Start_Alarn (1): Group (-4) 40 test
+Alarm> Start_Alarm (1): Group (-4) 40 test
 Invalid input
 
-Alarm> Start_Alarn (1): Group (4) -40 test
+Alarm> Start_Alarm (1): Group (4) -40 test
 Invalid input
 
 
@@ -19,6 +19,17 @@ Alarm(3) Printed by Alarm Display Thread 526640896 at 1607547399: Group(4) 16075
 Alarm Monitor Thread 535033600 Has Removed Alarm (3) at 1607547399: Group(4) 1607547400 test
 Display Thread 526640896 Has Stopped Printing Message of Alarm(3) at 1607547400: Group(4) 1607547400 test
 No More Alarms in Group(4): Display Thread 526640896 exiting at 1607547400
+
+
+        ===Input Errors for Start Alarm===
+Alarm> Change_Alarm (-1): Group (4) 40 test
+Invalid input
+
+Alarm> Change_Alarm (1): Group (-4) 40 test
+Invalid input
+
+Alarm> Change_Alarm (1): Group (4) -40 test
+Invalid input
 
 
           ===Change Alarm===
