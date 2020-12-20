@@ -1,3 +1,13 @@
+This is a group assignment for my third year Operating Systems course. The program is in C and its purpose is creating alarms that can run concurrently. The user of the program can either create an alarm or edit an existing alarm.
+The program accepts two commands: 
+
+Start_Alarm(Alarm_ID):  Group(Group_ID) Time  Message 
+Change_Alarm(Alarm_ID):  Group(Group_ID) Time  Message
+
+where Alarm_ID specifies the alarm's id, Group_ID specifies which group the alarm beongs time, Time is number of seconds before the alarm expires and Message is the message the alarm prints periodically.
+
+The project demonstrates our knowledge of C and the use of synchronization tools. Instructions on how to run the program are below.
+
 1. First copy the files "New_Alarm_Cond.c", "makefile.txt" (remove .txt) , and "errors.h" into your
    own directory.
 
